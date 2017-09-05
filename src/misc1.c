@@ -87,6 +87,32 @@ get_indent_str(
     return count;
 }
 
+    int
+breakindent_width(
+    char_u	*ptr,
+    int		ts,
+    int		list) /* if TRUE, count only screen size for tabs */
+{
+    int		count = 0;
+
+    for ( ; *ptr; ++ptr)
+    {
+	if (*ptr == TAB)
+	{
+	    if (!list || lcs_tab1)    /* count a tab for what it is worth */
+		count += ts - (count % ts);
+	    else
+		/* In list mode, when tab is not set, count screen char width
+		 * for Tab, displays: ^I */
+		count += ptr2cells(ptr);
+	}
+	else if (*ptr == ' ' || *ptr == '[' || *ptr == ']' || *ptr == '-')
+	    ++count;		/* count a space for one */
+	else
+	    break;
+    }
+    return count;
+}
 /*
  * Set the indent of the current line.
  * Leaves the cursor on the first non-blank in the line.
@@ -507,8 +533,8 @@ get_breakindent_win(
 	prev_line = line;
 	prev_ts = wp->w_buffer->b_p_ts;
 	prev_tick = CHANGEDTICK(wp->w_buffer);
-	prev_indent = get_indent_str(line,
-				     (int)wp->w_buffer->b_p_ts, wp->w_p_list);
+	prev_indent = breakindent_width(line,
+				        (int)wp->w_buffer->b_p_ts, wp->w_p_list);
     }
     bri = prev_indent + wp->w_p_brishift;
 
